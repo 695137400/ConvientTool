@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="ConvientTool:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/ConvientTool_jar</output-path>
+    <root id="archive" name="ConvientTool.jar">
+      <element id="module-output" name="ConvientTool" />
+    </root>
+  </artifact>
+</component>
