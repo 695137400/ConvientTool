@@ -2,24 +2,99 @@ import javax.swing.*;
 import javax.swing.border.LineBorder;
 import javax.swing.event.MouseInputListener;
 import java.awt.*;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
+import java.awt.event.*;
 
 import static javax.swing.JFrame.EXIT_ON_CLOSE;
 import static javax.swing.WindowConstants.DISPOSE_ON_CLOSE;
 
-public class ConvientTool{
-    private static int fW = 250;
-    private static int fh = 300;
+public class ConvientTool {
+    private static int fW = 250;//窗口宽度
+    private static int fh = 300;//窗口高度
+    static int _h = 30;//新窗口偏移量
     static boolean isDragged = false;
     static Point loc = null;
     static Point tmp = null;
-
+    static boolean isTray = false;
     private static JPanel contentPane;
-    public static void main(String args[]) {
+    static int w_count = 0;
+    public static void sb_yc(JFrame f ) {
+        System.out.println("鼠标移除");
+        int x = f.getX();
+        int y = f.getY();
+        System.out.println("x=" + x);
+        System.out.println("y=" + y);
+        Dimension screensize = Toolkit.getDefaultToolkit().getScreenSize();
+        int width = (int) screensize.getWidth();
+        int height = (int) screensize.getHeight();
+        System.out.println("width=" + width);
+        System.out.println("height=" + height);
+        System.out.println("fW=" + fW);
+        System.out.println("fh=" + fh);
+        System.out.println("-----" + f.getComponent(0).getWidth());
+        if (x < 20 || width - x < 20) {
+            if (x < 20) {
+                //f.setBounds(fW - fW * 2 + 19, y, fW, fh);
+                f.setBounds(fW - fW * 2 + 19, y, 240, 50);
+            }
+            if (width - x < 20) {
+                f.setSize(width + x, y);
+            }
+        }
+        if (y < 20 || height - y < 20) {
+            if (y < 20) {
+                f.setBounds(x, fh - fh * 2 + 19, 60, 290);
+            }
+        }
+    }
+
+    /**
+     * 处理系统托盘
+     */
+    private static void systemTray(JFrame f) {
+        if (!isTray) {
+            if (SystemTray.isSupported()) { // 判断系统是否支持托盘功能.
+                // 创建托盘右击弹出菜单
+                PopupMenu popupMenu = new PopupMenu();
+
+                //创建弹出菜单中的退出项
+                MenuItem itemExit = new MenuItem("退出系统");
+                itemExit.addActionListener(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        System.exit(0);
+                    }
+                });
+                popupMenu.add(itemExit);
+
+                //创建托盘图标
+                Image image = Toolkit.getDefaultToolkit().getImage(ConvientTool.class.getResource("ico.png"));
+                TrayIcon trayIcon = new TrayIcon(image, "测试系统托盘", popupMenu);
+                trayIcon.setImageAutoSize(true);
+                trayIcon.addActionListener(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        f.setVisible(true);
+                    }
+                });
+
+                //把托盘图标添加到系统托盘
+                //这个可以点击关闭之后再放到托盘里面，在此是打开程序直接显示托盘图标了
+                try {
+                    SystemTray.getSystemTray().add(trayIcon);
+                    isTray = true;
+                } catch (AWTException e1) {
+                    e1.printStackTrace();
+                }
+            }
+        }
+    }
+
+    private static void init(int w, int h) {
+        w_count++;
         JFrame f = new JFrame("便签");//实例化窗体对象
         f.setBackground(Color.WHITE);//设置窗体的背景颜色
         f.setDefaultCloseOperation(EXIT_ON_CLOSE);
+        f.setType(JFrame.Type.UTILITY);//任务栏隐藏
         JTextArea txaDisplay = new JTextArea();
         txaDisplay.setLineWrap(true);
         txaDisplay.setWrapStyleWord(true);
@@ -33,7 +108,7 @@ public class ConvientTool{
         scroll.setRowHeaderView(new LineNumberHeaderView());
         txaDisplay.setBackground(new Color(255, 255, 128));
         contentPane.add(scroll, BorderLayout.CENTER);
-        f.setBounds(fW, fh, fW, fh);
+        f.setBounds(w, h, w, h);
         f.setAlwaysOnTop(true);
         f.setUndecorated(true);
         scroll.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
@@ -78,40 +153,51 @@ public class ConvientTool{
 
             @Override
             public void mouseExited(MouseEvent e) {
-                System.out.println("鼠标移除");
-                int x = f.getX();
-                int y = f.getY();
-                System.out.println("x=" + x);
-                System.out.println("y=" + y);
-                Dimension screensize = Toolkit.getDefaultToolkit().getScreenSize();
-                int width = (int) screensize.getWidth();
-                int height = (int) screensize.getHeight();
-                System.out.println("width=" + width);
-                System.out.println("height=" + height);
-                System.out.println("fW=" + fW);
-                System.out.println("fh=" + fh);
-                System.out.println("-----" + f.getComponent(0).getWidth());
-                /*if (x == 0 || y == 0) {
-                    f.setBounds(width - (x - 100), y, 250, 300);
-                }*/
-                if (x < 20 || width - x < 20) {
-                    if (x < 20) {
-                        f.setBounds(fW - fW * 2 + 19, y, fW, fh);
-                    }
-                    if (width - x < 20) {
-                        f.setSize(width + x, y);
-                    }
-                }
-                if (y < 20 || height - y < 20) {
-                    if (y < 20) {
-                        f.setBounds(x, fh - fh * 2 + 19, fW, fh);
-                    }
-                }
+                sb_yc(f);
             }
 
+            /**
+             * 鼠标点击
+             * @param e
+             */
             @Override
             public void mouseClicked(MouseEvent e) {
-                System.out.println(1);
+                System.out.println("鼠标点击");
+                if (e.getButton() == MouseEvent.BUTTON1) {
+                    System.out.println("左键点击");
+                    // 左键点击
+                } else if (e.getButton() == MouseEvent.BUTTON2) {
+                    System.out.println("中键点击");
+                    // 中键点击
+                } else if (e.getButton() == MouseEvent.BUTTON3) {
+                    System.out.println("右键点击");
+                    final JPopupMenu jp = new JPopupMenu();
+                    JMenuItem item1 = new JMenuItem("新建标签");
+                    item1.addMouseListener(new MouseAdapter() {
+                        public void mouseReleased(MouseEvent e) {
+                            if (w_count < 5) {
+                                init(fW + _h, fh);
+                                _h += 30;
+                            }
+
+                        }
+                    });
+                    JMenuItem item2 = new JMenuItem("关闭标签");
+                    item2.addMouseListener(new MouseAdapter() {
+                        public void mouseReleased(MouseEvent e) {
+                            System.out.println("剩余窗口数量：" + w_count);
+                            if (w_count == 1) {
+                                System.exit(0);
+                            }
+                            f.setVisible(false);
+                            w_count--;
+                        }
+                    });
+                    jp.add(item1);
+                    jp.add(item2);
+                    jp.show(f, e.getX(), e.getY());
+                    // 右键点击
+                }
             }
 
             @Override
@@ -160,35 +246,7 @@ public class ConvientTool{
 
             @Override
             public void mouseExited(MouseEvent e) {
-                System.out.println("鼠标移除");
-                int x = f.getX();
-                int y = f.getY();
-                System.out.println("x=" + x);
-                System.out.println("y=" + y);
-                Dimension screensize = Toolkit.getDefaultToolkit().getScreenSize();
-                int width = (int) screensize.getWidth();
-                int height = (int) screensize.getHeight();
-                System.out.println("width=" + width);
-                System.out.println("height=" + height);
-                System.out.println("fW=" + fW);
-                System.out.println("fh=" + fh);
-                System.out.println("-----" + f.getComponent(0).getWidth());
-                /*if (x == 0 || y == 0) {
-                    f.setBounds(width - (x - 100), y, 250, 300);
-                }*/
-                if (x < 20 || width - x < 20) {
-                    if (x < 20) {
-                        f.setBounds(fW - fW * 2 + 19, y, fW, fh);
-                    }
-                    if (width - x < 20) {
-                        f.setSize(width + x, y);
-                    }
-                }
-                if (y < 20 || height - y < 20) {
-                    if (y < 20) {
-                        f.setBounds(x, fh - fh * 2 + 19, fW, fh);
-                    }
-                }
+                sb_yc(f);
             }
 
             @Override
@@ -210,8 +268,14 @@ public class ConvientTool{
             }
         });
         f.setVisible(true);//让组建显示
+        systemTray(f);
+    }
+
+    public static void main(String args[]) {
+        init(fW, fh);
     }
 }
+
 //主要代码
 class Border extends LineBorder implements MouseInputListener {
     private static final long serialVersionUID = 1L;
@@ -370,10 +434,12 @@ class Border extends LineBorder implements MouseInputListener {
 
     @Override
     public void mouseExited(MouseEvent arg0) {
-        frame.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+        sb_yc(frame);
+    }
+    public static void sb_yc(JFrame f ) {
         System.out.println("鼠标移除");
-        int x = frame.getX();
-        int y = frame.getY();
+        int x = f.getX();
+        int y = f.getY();
         System.out.println("x=" + x);
         System.out.println("y=" + y);
         Dimension screensize = Toolkit.getDefaultToolkit().getScreenSize();
@@ -383,25 +449,22 @@ class Border extends LineBorder implements MouseInputListener {
         System.out.println("height=" + height);
         System.out.println("fW=" + fW);
         System.out.println("fh=" + fh);
-        System.out.println("-----" + frame.getComponent(0).getWidth());
-                /*if (x == 0 || y == 0) {
-                    f.setBounds(width - (x - 100), y, 250, 300);
-                }*/
+        System.out.println("-----" + f.getComponent(0).getWidth());
         if (x < 20 || width - x < 20) {
             if (x < 20) {
-                frame.setBounds(fW - fW * 2 + 19, y, fW, fh);
+                //f.setBounds(fW - fW * 2 + 19, y, fW, fh);
+                f.setBounds(fW - fW * 2 + 19, y, 240, 50);
             }
             if (width - x < 20) {
-                frame.setSize(width + x, y);
+                f.setSize(width + x, y);
             }
         }
         if (y < 20 || height - y < 20) {
             if (y < 20) {
-                frame.setBounds(x, fh - fh * 2 + 19, fW, fh);
+                f.setBounds(x, fh - fh * 2 + 19, 60,290);
             }
         }
     }
-
     @Override
     public void mousePressed(MouseEvent arg0) {
     }
@@ -418,7 +481,7 @@ class LineNumberHeaderView extends javax.swing.JComponent {
      * JAVA TextArea行数显示插件
      */
     private static final long serialVersionUID = 1L;
-    private final  Font DEFAULT_FONT = new Font(Font.MONOSPACED, Font.PLAIN, 11);
+    private final Font DEFAULT_FONT = new Font(Font.MONOSPACED, Font.PLAIN, 11);
     public final Color DEFAULT_BACKGROUD = new Color(228, 228, 228);
     public final Color DEFAULT_FOREGROUD = Color.BLACK;
     public final int nHEIGHT = Integer.MAX_VALUE - 1000000;
